@@ -1,0 +1,51 @@
+## gauge control file
+
+runtime-configs:
+  # releaselib service
+  releaselib-service: "http://127.0.0.1:9950"
+
+  # weather api key
+  # weather apis are used to resolve location information
+  # from github to specific country names
+  weather-api-key: 
+
+  # github api key
+  # github api key is use to avoid rate limit
+  github-api-key: 
+
+release-control:
+  enable: true
+  # maximum release lag for dependencies in terms of
+  # their versions 
+  max-release-lag: 3
+
+  # maximum release lag for dependencies in terms of
+  # time duration (in days)
+  max-release-lag-duration: 180
+
+  # Ensure every code change (pull request) has been reviewed
+  # by atleast one reviewers (who is different from the author)
+  peer-review-enforced: true
+
+  # Zombie changes are the ones that are commited to `main` 
+  # branch directly without formal pull request
+  # Control to block such code changes
+  zombie-commit-enforced: true
+
+## export control check verifies developers/contributors location against
+## known export control restricted coutries
+export-controls:
+  # flag to enable/disable export control check 
+  enable: true
+
+  # list of countries to check against
+  restricted-countries: [russia, belarus]
+
+  # countribution threshold
+  contribution-threshold: 10
+
+  # regulated compliance control country list
+  taa-list: []
+
+  ofac-list: []
+
