@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tap8stry/gauge/pkg/common"
+	"github.com/IBM/gauge/pkg/common"
 )
 
 type WeatherResp struct {

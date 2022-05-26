@@ -1,7 +1,12 @@
 package core
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/IBM/gauge/pkg/common"
+	"github.com/IBM/gauge/pkg/releaselib"
+	"github.com/IBM/gauge/pkg/weather"
 )
 
 func resolveLocation(contributors []common.ContributorMD) common.ErrorReport {
