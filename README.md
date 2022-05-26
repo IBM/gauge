@@ -1,6 +1,6 @@
 ## Gauge
 
-Gauge health and security of open-source dependencies.
+Measure release insights and get recommendations for open-source dependencies.
 
 
 ## About Gauge
