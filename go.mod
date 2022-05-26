@@ -33,4 +33,5 @@ require (
 	google.golang.org/appengine v1.6.6 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	sigs.k8s.io/yaml v1.1.0 // indirect
+	gopkg.in/yaml.v3 v3.0.0
 )
