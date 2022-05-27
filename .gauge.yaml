@@ -36,10 +36,10 @@ release-control:
 ## known export control restricted coutries
 export-controls:
   # flag to enable/disable export control check 
-  enable: true
+  enable: false
 
   # list of countries to check against
-  restricted-countries: [russia, belarus]
+  restricted-countries: [country1, country2]
 
   # countribution threshold
   contribution-threshold: 10

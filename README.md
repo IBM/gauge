@@ -72,7 +72,7 @@ export-controls:
   enable: true
 
   # list of countries to check against
-  restricted-countries: [india]
+  restricted-countries: [country-name-1]
 
   # countribution threshold
   contribution-threshold: 10
