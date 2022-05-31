@@ -4,11 +4,6 @@ runtime-configs:
   # releaselib service
   releaselib-service: "http://127.0.0.1:9950"
 
-  # weather api key
-  # weather apis are used to resolve location information
-  # from github to specific country names
-  weather-api-key: 
-
   # github api key
   # github api key is use to avoid rate limit
   github-api-key: 
@@ -32,20 +27,4 @@ release-control:
   # Control to block such code changes
   zombie-commit-enforced: true
 
-## export control check verifies developers/contributors location against
-## known export control restricted coutries
-export-controls:
-  # flag to enable/disable export control check 
-  enable: false
-
-  # list of countries to check against
-  restricted-countries: [country1, country2]
-
-  # countribution threshold
-  contribution-threshold: 10
-
-  # regulated compliance control country list
-  taa-list: []
-
-  ofac-list: []
 
