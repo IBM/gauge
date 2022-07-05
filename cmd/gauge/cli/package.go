@@ -27,10 +27,11 @@ func Package() *ffcli.Command {
 		basereleasetag = flagset.String("b", "", "base release to compare against (optional: default to previous)")
 		repoURL        = flagset.String("r", "", "repository URL")
 		configfp       = flagset.String("c", "", "configuration file")
+		outputfp       = flagset.String("f", "", "result filepath")
 	)
 	return &ffcli.Command{
 		Name:       "package",
-		ShortUsage: "gauge package -p <pkgname> -e <ecosystem> -t <release-tag> -r <repo-url> -c <config file>",
+		ShortUsage: "gauge package -p <pkgname> -e <ecosystem> -t <release-tag> -r <repo-url> -c <config file> -f <result file>",
 		ShortHelp:  `gauge package help`,
 		LongHelp: `gauge package help 
 EXAMPLES
@@ -56,6 +57,7 @@ EXAMPLES
 			gopts.BaseReleaseID = *basereleasetag
 			gopts.PackageOptSelected = true
 			gopts.ControlFilepath = *configfp
+			gopts.ResultFilepath = *outputfp
 			if gopts.ControlFilepath == "" {
 				pwd, _ := os.Getwd()
 				gopts.ControlFilepath = path.Join(pwd, defaultGaugeConfigFile)

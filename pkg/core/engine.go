@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
@@ -36,6 +37,10 @@ func Start(ctx context.Context, opts common.GaugeOpts) error {
 	opts.PackageReleaseEnabled = gaugeCtr.ReleaseConfig.Enable
 
 	printGaugeReport(report, opts)
+
+	if opts.ResultFilepath != "" {
+		storeLogReport(report, opts.ResultFilepath)
+	}
 
 	return nil
 }
@@ -94,7 +99,7 @@ func sbomGauger(ctx context.Context, opts common.GaugeOpts, guageCtr *gaugeContr
 			logreport = append(logreport, pkglogger)
 		}
 	}
-	logFile, _ := storeLogReport(logreport)
+	logFile, _ := storeLogReport(logreport, "")
 	summary.AnalyzedPackages = totalPkgs - resolveFailedPkgs
 	summary.TotalPackages = nPkgs
 	summarizeSBOMResults(pkgsReport, &summary)
@@ -138,7 +143,7 @@ func packageGauger(ctx context.Context, opts common.GaugeOpts, guageCtr *gaugeCo
 	logreport.PackageName = ossMeta.PackageName
 	logreport.RepoURL = ossMeta.RepoURL
 
-	logFile, err := storeLogReport(logreport)
+	logFile, err := storeLogReport(logreport, "")
 	// printPackageReport(summary, ossMeta)
 	fmt.Printf("complete log file is available at: %s\n", logFile)
 
@@ -183,15 +188,19 @@ func printPackageReport(report common.ExportControlSummary, ossMeta common.Packa
 	fmt.Println()
 }
 
-func storeLogReport(logreport interface{}) (string, error) {
-	logf, err := ioutil.TempFile(os.TempDir(), "gauge-")
-	if err != nil {
-		return "", err
+func storeLogReport(logreport interface{}, filepath string) (string, error) {
+	if filepath == "" {
+		fp, err := ioutil.TempFile(os.TempDir(), "gauge-")
+		if err != nil {
+			return "", err
+		}
+		filepath = fp.Name()
 	}
-
+	logf, _ := os.Create(filepath)
+	writer := bufio.NewWriter(logf)
 	logBuf, _ := json.MarshalIndent(logreport, "", "    ")
-	logf.Write(logBuf)
-	logf.Close()
+
+	writer.Write(logBuf)
 
 	return logf.Name(), nil
 }
