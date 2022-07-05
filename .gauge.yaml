@@ -27,4 +27,19 @@ release-control:
   # Control to block such code changes
   zombie-commit-enforced: true
 
+## export control check verifies developers/contributors location against
+## known export control restricted coutries
+export-controls:
+  # flag to enable/disable export control check 
+  enable: false
 
+  # list of countries to check against
+  restricted-countries: [russia,belarus]
+
+  # countribution threshold
+  contribution-threshold: 10
+
+  # regulated compliance control country list
+  taa-list: []
+
+  ofac-list: []

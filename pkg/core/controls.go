@@ -152,6 +152,7 @@ func evaluateOSSExportControl(contributors []common.ContributorMD, controlOpts *
 func evaluatePackageRelease(releaseInsights *common.ReleaseInsights, controlOpts *gaugeControl) common.RecommendedVersion {
 	report := common.RecommendedVersion{}
 
+	report.PackageName = releaseInsights.PackageName
 	report.Version = releaseInsights.LatestVersion
 	report.ReleaseTimestamp = releaseInsights.LatestReleaseTimestamp
 	report.ChangeLabels = releaseInsights.Labels

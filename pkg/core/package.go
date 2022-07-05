@@ -99,7 +99,7 @@ func GetPackageReleasesMD(ctx context.Context, ghclient *ghapis.GHClient, pkgNam
 
 	latestRelease, err := ghclient.GetLatestRelease(ctx, repo)
 	if err != nil {
-		log.Fatal("\n failed to query github apis ")
+		fmt.Printf("\n failed to query github apis: %v\n", err)
 	}
 	releaseReport.LatestVersion = latestRelease.Tag
 	releaseReport.LatestReleaseTimestamp = latestRelease.CreatedAt

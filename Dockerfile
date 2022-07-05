@@ -18,5 +18,6 @@ RUN yum -y upgrade
 
 WORKDIR /
 COPY --from=0 /go/src/github.com/IBM/gauge/gauge /usr/local/bin/gauge
+COPY .gauge.yaml .
 
 ENTRYPOINT ["/usr/local/bin/gauge"]
