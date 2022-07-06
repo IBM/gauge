@@ -7,7 +7,7 @@ import (
 	"github.com/IBM/gauge/pkg/common"
 )
 
-func printGaugeReport(report common.GaugeReport, opts common.GaugeOpts) {
+func printGaugeReportForPackage(report common.GaugeReport, opts common.GaugeOpts) {
 
 	fmt.Printf(strings.Repeat("*", 80))
 	fmt.Printf("\nGauge Report for package `%s`\n", report.ReleaseReport.Insights.PackageName)

@@ -24,7 +24,9 @@ func (gaugeCli *GHClient) GetAllReleases(ctx context.Context, repoURL string) ([
 		pageCount++
 		rlist, ghres, err := gaugeCli.ClientV3.Repositories.ListReleases(ctx, repoOwner, repo, &github.ListOptions{Page: pageCount, PerPage: 100})
 		if err != nil || ghres.StatusCode != 200 || len(rlist) == 0 {
-			// return nil, errors.Wrapf(err, "error listing releases")
+			if ghres.StatusCode == http.StatusForbidden {
+				return releases, &common.GithubRateLimitErr{}
+			}
 			break
 		}
 		for _, r := range rlist {
@@ -48,6 +50,9 @@ func (gaugeCli *GHClient) GetLatestRelease(ctx context.Context, repoURL string) 
 	repo := parseRepositoryName(repoURL)
 	result, ghresp, err := gaugeCli.ClientV3.Repositories.GetLatestRelease(ctx, repoOwner, repo)
 	if err != nil {
+		if ghresp.StatusCode == http.StatusForbidden {
+			return release, &common.GithubRateLimitErr{}
+		}
 		return release, errors.Wrapf(err, "error quering releases")
 	}
 	if ghresp.StatusCode != 200 {
@@ -82,8 +87,11 @@ func (ghcli *GHClient) GetChangeInsights(ctx context.Context, releaseID, baseRel
 	}
 	repo := parseRepositoryName(repoURL)
 	l, resp, err := ghcli.ClientV3.Repositories.ListTags(ctx, repoOwner, repo, &github.ListOptions{})
-	if resp.StatusCode == http.StatusForbidden || err != nil {
-		return commitH, errors.Wrapf(err, "error listing repository tags")
+	if err != nil {
+		if resp.StatusCode == http.StatusForbidden {
+			return commitH, &common.GithubRateLimitErr{}
+		}
+		return commitH, errors.Wrapf(err, "error quering releases")
 	}
 	previousReleaseCommit := ""
 	currentReleaseCommit := ""
@@ -107,8 +115,11 @@ func (ghcli *GHClient) GetChangeInsights(ctx context.Context, releaseID, baseRel
 	prCache := map[int]struct{}{}
 	// fmt.Println(previousReleaseCommit, "--", currentReleaseCommit)
 	gc, resp, err := ghcli.ClientV3.Repositories.CompareCommits(ctx, repoOwner, repo, previousReleaseCommit, currentReleaseCommit)
-	if resp.StatusCode != http.StatusOK || err != nil {
-		return commitH, errors.Wrapf(err, "error comparing commits")
+	if err != nil {
+		if resp.StatusCode == http.StatusForbidden {
+			return commitH, &common.GithubRateLimitErr{}
+		}
+		return commitH, errors.Wrapf(err, "error quering releases")
 	}
 	for _, c := range gc.Commits {
 		prnum, _ := ghcli.getAssociatedPRNumber(ctx, repoOwner, repo, c.GetSHA())

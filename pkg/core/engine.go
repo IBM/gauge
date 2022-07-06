@@ -7,12 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"strings"
 
 	"github.com/IBM/gauge/pkg/common"
 	"github.com/IBM/gauge/pkg/ghapis"
+	"github.com/IBM/gauge/pkg/pkgmgr"
 	"github.com/IBM/gauge/pkg/sbom"
 	"github.com/cheggaaa/pb/v3"
 )
@@ -26,17 +26,88 @@ func Start(ctx context.Context, opts common.GaugeOpts) error {
 	ghclient := ghapis.GHClient{}
 	ghclient.Setup(ctx)
 
+	if opts.PackageOptSelected {
+		runGaugeForPackage(ctx, opts, &gaugeCtr, &ghclient)
+	} else if opts.SBOMOptSelected {
+		runGaugeForSBOM(ctx, opts, &gaugeCtr, &ghclient)
+	}
+	return nil
+}
+
+func runGaugeForPackage(ctx context.Context, opts common.GaugeOpts, gaugeCtr *gaugeControl, ghclient *ghapis.GHClient) {
 	report := common.GaugeReport{}
+	opts.RepoURL = resolvePackageSource(opts.PkgName, opts.Ecosystem, opts.RepoURL)
 	if gaugeCtr.ReleaseConfig.Enable {
-		gaugePackageRelease(ctx, opts, &gaugeCtr, &ghclient, &report)
+		gaugePackageRelease(ctx, opts, gaugeCtr, ghclient, &report)
 	}
 	if gaugeCtr.ExportControl.Enable {
-		packageGauger(ctx, opts, &gaugeCtr, &ghclient, &report)
+		packageGauger(ctx, opts, gaugeCtr, ghclient, &report)
 	}
 	opts.ExportControlEnabled = gaugeCtr.ExportControl.Enable
 	opts.PackageReleaseEnabled = gaugeCtr.ReleaseConfig.Enable
 
-	printGaugeReport(report, opts)
+	printGaugeReportForPackage(report, opts)
+
+	if opts.ResultFilepath != "" {
+		storeLogReport(report, opts.ResultFilepath)
+	}
+}
+
+func runGaugeForSBOM(ctx context.Context, opts common.GaugeOpts, gaugeCtr *gaugeControl, ghclient *ghapis.GHClient) error {
+	report := []common.GaugeReport{}
+	pkgList := []common.PackageProps{}
+	if strings.Compare(strings.ToLower(common.CYCLONEDX_VAR), opts.SBOMFormat) == 0 {
+		pkgList, _ = sbom.ParseOSSPackagesCyclonedx(opts.SBOMFilepath)
+	} else if strings.Compare(strings.ToLower(common.CSV_VAR), opts.SBOMFormat) == 0 {
+		pkgList, _ = sbom.ParseOSSPackagesCSV(opts.SBOMFilepath)
+	} else {
+		return fmt.Errorf("sbom format `%s` currently not supported", opts.SBOMFormat)
+	}
+	if len(pkgList) == 0 {
+		return errors.New("error reading sbom file")
+	}
+	nPkgs := len(pkgList)
+	progress := pb.StartNew(nPkgs)
+	totalPkgs := 0
+	resolveFailedPkgs := 0
+	// cntrFailedPkgs := 0
+	ghRateLimitHit := false
+
+	for idx := 0; idx < nPkgs && !ghRateLimitHit; idx++ {
+		pkg := pkgList[idx]
+		totalPkgs++
+		if totalPkgs%5 == 0 {
+			progress.SetCurrent(int64(totalPkgs))
+		}
+		currGaugeReport := common.GaugeReport{}
+		opts.RepoURL = resolvePackageSource(pkg.Name, pkg.Ecosystem, "")
+		opts.PkgName = pkg.Name
+		opts.Ecosystem = pkg.Ecosystem
+		opts.ReleaseID = pkg.Key
+
+		var err error
+		if gaugeCtr.ReleaseConfig.Enable {
+			err = gaugePackageRelease(ctx, opts, gaugeCtr, ghclient, &currGaugeReport)
+		}
+		if gaugeCtr.ExportControl.Enable {
+			err = packageGauger(ctx, opts, gaugeCtr, ghclient, &currGaugeReport)
+		}
+		if err != nil {
+			resolveFailedPkgs++
+			if errors.Is(err, &common.GithubRateLimitErr{}) {
+				fmt.Printf("Github API rate limit reached, following result maybe incomplete. ")
+				ghRateLimitHit = true
+			}
+		}
+		report = append(report, currGaugeReport)
+		if idx == 5 {
+			break
+		}
+	}
+
+	progress.Finish()
+	// printSBOMReport(opts.SBOMFilepath, guageCtr.ExportControl.RestrictedCountries, &summary)
+	// fmt.Printf("complete log file is available at: %s\n", logFile)
 
 	if opts.ResultFilepath != "" {
 		storeLogReport(report, opts.ResultFilepath)
@@ -132,8 +203,7 @@ func packageGauger(ctx context.Context, opts common.GaugeOpts, guageCtr *gaugeCo
 
 	ossMeta, err := getPkgOSSMeta(ctx, ghcli, opts.PkgName, opts.Ecosystem, opts.RepoURL)
 	if err != nil {
-		//log & exit
-		log.Fatal("\nFailed to query data for analysis:")
+		return err
 	}
 
 	logreport.LocationErr = resolveLocation(ossMeta.Contributors)
@@ -143,12 +213,13 @@ func packageGauger(ctx context.Context, opts common.GaugeOpts, guageCtr *gaugeCo
 	logreport.PackageName = ossMeta.PackageName
 	logreport.RepoURL = ossMeta.RepoURL
 
-	logFile, err := storeLogReport(logreport, "")
-	// printPackageReport(summary, ossMeta)
-	fmt.Printf("complete log file is available at: %s\n", logFile)
+	// logFile, err := storeLogReport(logreport, "")
+	// // printPackageReport(summary, ossMeta)
+	// fmt.Printf("complete log file is available at: %s\n", logFile)
 
 	report.ExportControlReport.OSSMeta = ossMeta
 	report.ExportControlReport.ExportControl = summary
+	report.ExportControlReport.ExportControl.AuditLogs = logreport
 
 	return nil
 }
@@ -206,7 +277,7 @@ func storeLogReport(logreport interface{}, filepath string) (string, error) {
 }
 
 func gaugePackageRelease(ctx context.Context, opts common.GaugeOpts, gaugeCtr *gaugeControl, ghclient *ghapis.GHClient, report *common.GaugeReport) error {
-	releaseInsights, err := GetPackageReleasesMD(ctx, ghclient, opts.PkgName, opts.Ecosystem, opts.RepoURL, opts.ReleaseID)
+	releaseInsights, err := GetPackageReleasesMD(ctx, ghclient, opts.PkgName, opts.Ecosystem, opts.RepoURL, opts.ReleaseID, opts.DeepScanEnabled)
 	if err != nil {
 		fmt.Printf("failed to query package release information\n")
 		return fmt.Errorf("failed to query package release information")
@@ -245,4 +316,15 @@ func printPackageReleaseReport(releaseInsights common.ReleaseInsights, recommend
 	fmt.Printf(strings.Repeat("-", 80))
 	fmt.Println()
 
+}
+
+func resolvePackageSource(pkgName, ecosystem, repourl string) string {
+	if repourl == "" {
+		if ecosystem == common.NODE_ECOSYSTEM {
+			repourl, _ = pkgmgr.FetchGitRepositoryFromNPM(pkgName)
+		} else if ecosystem == common.PYTHON_ECOSYSTEM {
+			repourl, _ = pkgmgr.FetchGitRepositoryFromPYPI(pkgName)
+		}
+	}
+	return repourl
 }

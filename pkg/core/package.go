@@ -3,12 +3,10 @@ package core
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/IBM/gauge/pkg/common"
 	"github.com/IBM/gauge/pkg/ghapis"
-	"github.com/IBM/gauge/pkg/pkgmgr"
 	"github.com/IBM/gauge/pkg/releaselib"
 	"github.com/IBM/gauge/pkg/utils"
 )
@@ -26,19 +24,19 @@ func getPkgOSSMeta(ctx context.Context, ghcli *ghapis.GHClient, pkgName, ecosyst
 		printStatus(ctx, "\rGoing to fetch the cache state... \u2714")
 	}
 	printStatus(ctx, "\n")
-	if repo == "" {
-		// fmt.Printf("finding repo url for package: %s\n", pkg.Name)
-		repourl := ""
-		if ecosystem == common.NODE_ECOSYSTEM {
-			repourl, _ = pkgmgr.FetchGitRepositoryFromNPM(pkgName)
-		} else if ecosystem == common.PYTHON_ECOSYSTEM {
-			repourl, _ = pkgmgr.FetchGitRepositoryFromPYPI(pkgName)
-		}
-		if repourl != "" {
-			repo = repourl
-			result.RepoURL = repourl
-		}
-	}
+	// if repo == "" {
+	// 	// fmt.Printf("finding repo url for package: %s\n", pkg.Name)
+	// 	repourl := ""
+	// 	if ecosystem == common.NODE_ECOSYSTEM {
+	// 		repourl, _ = pkgmgr.FetchGitRepositoryFromNPM(pkgName)
+	// 	} else if ecosystem == common.PYTHON_ECOSYSTEM {
+	// 		repourl, _ = pkgmgr.FetchGitRepositoryFromPYPI(pkgName)
+	// 	}
+	// 	if repourl != "" {
+	// 		repo = repourl
+	// 		result.RepoURL = repourl
+	// 	}
+	// }
 	if repo == "" {
 		return result, fmt.Errorf("error resolving repository url")
 	}
@@ -90,7 +88,7 @@ func printStatus(ctx context.Context, msg string) {
 }
 
 //GetPackageReleasesMD :
-func GetPackageReleasesMD(ctx context.Context, ghclient *ghapis.GHClient, pkgName, ecosystem, repo, version string) (common.ReleaseInsights, error) {
+func GetPackageReleasesMD(ctx context.Context, ghclient *ghapis.GHClient, pkgName, ecosystem, repo, version string, deepscan bool) (common.ReleaseInsights, error) {
 	releaseReport := common.ReleaseInsights{}
 
 	releaseReport.PackageName = pkgName
@@ -99,7 +97,8 @@ func GetPackageReleasesMD(ctx context.Context, ghclient *ghapis.GHClient, pkgNam
 
 	latestRelease, err := ghclient.GetLatestRelease(ctx, repo)
 	if err != nil {
-		fmt.Printf("\n failed to query github apis: %v\n", err)
+		fmt.Printf("\nfailed to query github apis: %v\n", err)
+		return releaseReport, err
 	}
 	releaseReport.LatestVersion = latestRelease.Tag
 	releaseReport.LatestReleaseTimestamp = latestRelease.CreatedAt
@@ -109,7 +108,8 @@ func GetPackageReleasesMD(ctx context.Context, ghclient *ghapis.GHClient, pkgNam
 	} else {
 		releaseList, err := ghclient.GetAllReleases(ctx, repo)
 		if err != nil {
-			log.Fatal("\n failed to query github apis ")
+			fmt.Println("\nfailed to query github apis ")
+			return releaseReport, err
 		}
 		currRelease := common.ReleaseMD{}
 		for _, r := range releaseList {
@@ -123,11 +123,13 @@ func GetPackageReleasesMD(ctx context.Context, ghclient *ghapis.GHClient, pkgNam
 		releaseReport.ReleaseTimeLag = fmt.Sprintf("%d days", int((latestRelease.CreatedAt.Sub(currRelease.CreatedAt).Hours() / 24)))
 	}
 
-	chInsights, err := ghclient.GetChangeInsights(ctx, releaseReport.LatestVersion, releaseReport.CurrentVersion, repo)
-	if err != nil {
-		fmt.Printf("change insights not available\n")
+	if deepscan {
+		chInsights, err := ghclient.GetChangeInsights(ctx, releaseReport.LatestVersion, releaseReport.CurrentVersion, repo)
+		if err != nil {
+			fmt.Printf("change insights not available\n")
+		}
+		releaseReport.ChangeInsights = chInsights
 	}
-	releaseReport.ChangeInsights = chInsights
 	// json, _ := json.MarshalIndent(releaseReport, "", "    ")
 	// fmt.Println(string(json))
 	return releaseReport, nil

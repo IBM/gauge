@@ -17,14 +17,15 @@ import (
 func SBOM() *ffcli.Command {
 	var (
 		flagset  = flag.NewFlagSet("sbom", flag.ExitOnError)
-		sbomfp   = flagset.String("f", "", "sbom filepath")
+		sbomfp   = flagset.String("s", "", "sbom filepath")
 		format   = flagset.String("o", "", "sbom format (default: cycloneDX)")
 		configfp = flagset.String("c", "", "configuration file")
-		resultfp = flagset.String("r", "", "result filepath")
+		resultfp = flagset.String("f", "", "result filepath")
+		deepscan = flagset.Bool("d", false, "enable deep scan (could be blocked by github API rate-limit)")
 	)
 	return &ffcli.Command{
 		Name:       "sbom",
-		ShortUsage: "gauge sbom -f <sbom filepath> -o <sbom format> -c <config-file>",
+		ShortUsage: "gauge sbom -s <sbom filepath> -o <sbom format> -f <result filepath>",
 		ShortHelp:  `gauge sbom dependencies`,
 		LongHelp: `gauge OSS dependencies from SBOM 
 EXAMPLES
@@ -34,7 +35,7 @@ EXAMPLES
 		FlagSet: flagset,
 		Exec: func(ctx context.Context, args []string) error {
 
-			if *sbomfp == "" || *configfp == "" {
+			if *sbomfp == "" {
 				fmt.Errorf("missing input parameters")
 				return errors.New("missing params")
 			}
@@ -51,6 +52,7 @@ EXAMPLES
 			dopts.ControlFilepath = *configfp
 			dopts.SBOMFormat = *format
 			dopts.ResultFilepath = *resultfp
+			dopts.DeepScanEnabled = *deepscan
 			if dopts.ControlFilepath == "" {
 				pwd, _ := os.Getwd()
 				dopts.ControlFilepath = path.Join(pwd, defaultGaugeConfigFile)

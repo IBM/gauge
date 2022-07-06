@@ -19,6 +19,7 @@ type SBOMInputOpts struct {
 	SBOMFilepath    string
 	SBOMFormat      string
 	ControlFilepath string
+	DeepScanEnabled bool
 }
 
 //UnpackOpts :
@@ -178,17 +179,17 @@ type PackageContribResult struct {
 
 //PackageRepoMD :
 type PackageRepoMD struct {
-	PackageName            string    `json:"package_name"`
-	RepoURL                string    `json:"repo_url"`
-	Version                string    `json:"version"`
-	LastUpdated            time.Time `json:"updated_at"`
-	TotalContributors      int       `json:"total_contributors"`
-	Size                   int       `json:"size"`
-	License                string    `json:"license"`
-	Ecosystem              string    `json:"ecosystem"`
-	Contributors           []ContributorMD
-	AnonymizedContributors int `json:"anonymized_contributors"`
-	ErroredContributors    int `json:"errored_contributors"`
+	PackageName            string          `json:"package_name"`
+	RepoURL                string          `json:"repo_url"`
+	Version                string          `json:"version"`
+	LastUpdated            time.Time       `json:"updated_at"`
+	TotalContributors      int             `json:"total_contributors"`
+	Size                   int             `json:"size"`
+	License                string          `json:"license"`
+	Ecosystem              string          `json:"ecosystem"`
+	Contributors           []ContributorMD `json:"-"`
+	AnonymizedContributors int             `json:"anonymized_contributors"`
+	ErroredContributors    int             `json:"errored_contributors"`
 }
 
 //ContributorMD :
@@ -232,6 +233,7 @@ type ExportControlSummary struct {
 		Contributors         int    `json:"total_num_of_contributors"`
 		PercentContributions int    `json:"percent_contributions"`
 	}
+	AuditLogs LogReport `json:"audit_log_report"`
 }
 
 //LogReport :
