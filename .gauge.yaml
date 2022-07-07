@@ -30,7 +30,11 @@ export-controls:
   enable: false
 
   # list of countries to check against
+<<<<<<< HEAD
   restricted-countries: [country-name-1,country-name-2]
+=======
+  restricted-countries: [country1,country2]
+>>>>>>> 1f0132ea7ba0ae6e57af1c20f0167f4d514c0b7e
 
   # countribution threshold
   contribution-threshold: 10
