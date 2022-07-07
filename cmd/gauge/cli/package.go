@@ -41,7 +41,11 @@ EXAMPLES
 		FlagSet: flagset,
 		Exec: func(ctx context.Context, args []string) error {
 
-			if *pkgname == "" || *ecosystem == "" {
+			if *pkgname == "" {
+				fmt.Errorf("missing input parameters")
+				return errors.New("missing params")
+			}
+			if *ecosystem == "" || *repoURL == "" {
 				fmt.Errorf("missing input parameters")
 				return errors.New("missing params")
 			}

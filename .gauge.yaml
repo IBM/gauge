@@ -34,7 +34,7 @@ export-controls:
   enable: false
 
   # list of countries to check against
-  restricted-countries: [russia,belarus]
+  restricted-countries: [country1,country2]
 
   # countribution threshold
   contribution-threshold: 10
