@@ -143,12 +143,13 @@ func packageGauger(ctx context.Context, opts common.GaugeOpts, guageCtr *gaugeCo
 	logreport.PackageName = ossMeta.PackageName
 	logreport.RepoURL = ossMeta.RepoURL
 
-	logFile, err := storeLogReport(logreport, "")
-	// printPackageReport(summary, ossMeta)
-	fmt.Printf("complete log file is available at: %s\n", logFile)
+	// logFile, err := storeLogReport(logreport, "")
+	// // printPackageReport(summary, ossMeta)
+	// fmt.Printf("complete log file is available at: %s\n", logFile)
 
 	report.ExportControlReport.OSSMeta = ossMeta
 	report.ExportControlReport.ExportControl = summary
+	report.ExportControlReport.ExportControl.AuditLogs = logreport
 
 	return nil
 }
