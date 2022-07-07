@@ -4,10 +4,6 @@ runtime-configs:
   # releaselib service
   releaselib-service: "http://127.0.0.1:9950"
 
-  # github api key
-  # github api key is use to avoid rate limit
-  github-api-key: 
-
 release-control:
   enable: true
   # maximum release lag for dependencies in terms of
@@ -34,7 +30,7 @@ export-controls:
   enable: false
 
   # list of countries to check against
-  restricted-countries: [russia,belarus,germany]
+  restricted-countries: [country-name-1,country-name-2]
 
   # countribution threshold
   contribution-threshold: 10

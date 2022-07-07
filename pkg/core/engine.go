@@ -268,12 +268,16 @@ func storeLogReport(logreport interface{}, filepath string) (string, error) {
 		filepath = fp.Name()
 	}
 	logf, _ := os.Create(filepath)
+	logfname := logf.Name()
 	writer := bufio.NewWriter(logf)
-	logBuf, _ := json.MarshalIndent(logreport, "", "    ")
-
+	logBuf, err := json.MarshalIndent(logreport, "", "    ")
+	if err != nil {
+		fmt.Println(err)
+	}
 	writer.Write(logBuf)
-
-	return logf.Name(), nil
+	writer.Flush()
+	logf.Close()
+	return logfname, nil
 }
 
 func gaugePackageRelease(ctx context.Context, opts common.GaugeOpts, gaugeCtr *gaugeControl, ghclient *ghapis.GHClient, report *common.GaugeReport) error {
