@@ -2,7 +2,6 @@
 
 Measure release insights and get recommendations for open-source dependencies.
 
-
 ## About Gauge
 
 For OSS ecosystem, there are established practices for disclosing, discovering and remediating vulnerabilities in the code. Although, in the wake of recent cybersecurity incidents it is becoming important to understand and assess risks associated with developers and their contribution practices. Project “gauge” aims to provides risk assessment for release engineering. For instance, when you upgrade your OSS dependency, it measures risk from every commit that went into the new release, developers that contributed those changes, code review practices observed and types of changes that went into release (performance fix, security fix, but fix, etc.). Core motivation behind project gauge is to bring visibility and auditing into OSS releases.
