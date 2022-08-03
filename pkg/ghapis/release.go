@@ -85,30 +85,41 @@ func (ghcli *GHClient) GetChangeInsights(ctx context.Context, releaseID, baseRel
 	if repoURL != "" {
 		repoOwner = parseRepositoryOwner(repoURL)
 	}
-	repo := parseRepositoryName(repoURL)
-	l, resp, err := ghcli.ClientV3.Repositories.ListTags(ctx, repoOwner, repo, &github.ListOptions{})
-	if err != nil {
-		if resp.StatusCode == http.StatusForbidden {
-			return commitH, &common.GithubRateLimitErr{}
-		}
-		return commitH, errors.Wrapf(err, "error quering releases")
-	}
 	previousReleaseCommit := ""
 	currentReleaseCommit := ""
-	findNext := false
-	for _, i := range l {
-		if findNext && baseReleaseID != "" {
-			if i.GetName() == baseReleaseID {
-				previousReleaseCommit = *i.GetCommit().SHA
-				// releaseMeta.BaseReleaseTag = i.GetName()
-				// releaseMeta.BaseReleaseTime, _ = ghcli.getReleaseTimestamp(ctx, repoOwner, repo, baseReleaseID)
-				break
+	repo := parseRepositoryName(repoURL)
+	pageCount := 0
+	for {
+		pageCount++
+		l, resp, err := ghcli.ClientV3.Repositories.ListTags(ctx, repoOwner, repo, &github.ListOptions{Page: pageCount, PerPage: 100})
+		if err != nil || resp.StatusCode != 200 || len(l) == 0 {
+			if resp.StatusCode == http.StatusForbidden {
+				return commitH, &common.GithubRateLimitErr{}
+			} else if resp.StatusCode != 200 {
+				return commitH, errors.Wrapf(err, "error quering releases")
 			}
+			break
 		}
-		if i.GetName() == releaseID {
-			currentReleaseCommit = *i.GetCommit().SHA
-			// releaseMeta.ReleaseTime, _ = ghcli.getReleaseTimestamp(ctx, repoOwner, repo, releaseID)
-			findNext = true
+
+		findNext := false
+		for _, i := range l {
+			// if current version exists, look for that first?
+			if findNext && baseReleaseID != "" {
+				// baseReleaseID is current version (version found in sbom or package tag to scan)
+				if i.GetName() == baseReleaseID {
+					previousReleaseCommit = *i.GetCommit().SHA
+					// releaseMeta.BaseReleaseTag = i.GetName()
+					// releaseMeta.BaseReleaseTime, _ = ghcli.getReleaseTimestamp(ctx, repoOwner, repo, baseReleaseID)
+					break
+				}
+			}
+			// releaseID is latest version
+			if i.GetName() == releaseID {
+				// currentReleaseCommit is the latest release version
+				currentReleaseCommit = *i.GetCommit().SHA
+				// releaseMeta.ReleaseTime, _ = ghcli.getReleaseTimestamp(ctx, repoOwner, repo, releaseID)
+				findNext = true
+			}
 		}
 	}
 	commitH.Changes = []common.PullRequest{}
