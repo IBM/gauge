@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -91,6 +92,9 @@ func (ghcli *GHClient) GetChangeInsights(ctx context.Context, releaseID, baseRel
 	pageCount := 0
 	for {
 		pageCount++
+		if previousReleaseCommit != "" && currentReleaseCommit != "" {
+			break
+		}
 		l, resp, err := ghcli.ClientV3.Repositories.ListTags(ctx, repoOwner, repo, &github.ListOptions{Page: pageCount, PerPage: 100})
 		if err != nil || resp.StatusCode != 200 || len(l) == 0 {
 			if resp.StatusCode == http.StatusForbidden {
@@ -105,8 +109,12 @@ func (ghcli *GHClient) GetChangeInsights(ctx context.Context, releaseID, baseRel
 		for _, i := range l {
 			// if current version exists, look for that first?
 			if findNext && baseReleaseID != "" {
+				cleanversion := strings.Trim(i.GetName(), "v")
+				if !(len(cleanversion) == len(i.GetName())-1 && i.GetName()[0:1] == "v") {
+					cleanversion = i.GetName()
+				}
 				// baseReleaseID is current version (version found in sbom or package tag to scan)
-				if i.GetName() == baseReleaseID {
+				if cleanversion == baseReleaseID {
 					previousReleaseCommit = *i.GetCommit().SHA
 					// releaseMeta.BaseReleaseTag = i.GetName()
 					// releaseMeta.BaseReleaseTime, _ = ghcli.getReleaseTimestamp(ctx, repoOwner, repo, baseReleaseID)
