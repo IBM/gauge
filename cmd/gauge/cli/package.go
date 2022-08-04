@@ -28,6 +28,7 @@ func Package() *ffcli.Command {
 		repoURL        = flagset.String("r", "", "repository URL")
 		configfp       = flagset.String("c", "", "configuration file")
 		outputfp       = flagset.String("f", "", "result filepath")
+		deepscan       = flagset.Bool("d", false, "enable deep scan (could be blocked by github API rate-limit)")
 	)
 	return &ffcli.Command{
 		Name:       "package",
@@ -62,6 +63,7 @@ EXAMPLES
 			gopts.PackageOptSelected = true
 			gopts.ControlFilepath = *configfp
 			gopts.ResultFilepath = *outputfp
+			gopts.DeepScanEnabled = *deepscan
 			if gopts.ControlFilepath == "" {
 				pwd, _ := os.Getwd()
 				gopts.ControlFilepath = path.Join(pwd, defaultGaugeConfigFile)
