@@ -142,12 +142,17 @@ func (ghcli *GHClient) GetChangeInsights(ctx context.Context, releaseID, baseRel
 	}
 	for _, c := range gc.Commits {
 		prnum, _ := ghcli.getAssociatedPRNumber(ctx, repoOwner, repo, c.GetSHA())
+
 		if prnum != 0 && !contains(prCache, prnum) {
 			pr := ghcli.getPRMeta(ctx, repoOwner, repo, prnum)
+			// missing contributors commitH.Contributors
+			// missing approvers commitH.Approvers
 			pr.Authors = c.GetAuthor().GetLogin()
+
 			commitH.Changes = append(commitH.Changes, pr)
 			prCache[prnum] = struct{}{}
 		} else {
+			// missing contributors commitH.Contributors
 			// zombieChange := common.PullRequest{
 			// 	Commits: 1,
 			// }

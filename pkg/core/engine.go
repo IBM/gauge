@@ -295,6 +295,7 @@ func gaugePackageRelease(ctx context.Context, opts common.GaugeOpts, gaugeCtr *g
 	return nil
 }
 
+// never called, logic in pkg/core/reports.go instead
 func printPackageReleaseReport(releaseInsights common.ReleaseInsights, recommendation common.RecommendedVersion) {
 	fmt.Printf(strings.Repeat("*", 80))
 	fmt.Printf("\nGauge Report for package %s:\n", releaseInsights.PackageName)
