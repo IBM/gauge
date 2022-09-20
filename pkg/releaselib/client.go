@@ -23,10 +23,6 @@ type ResolvedLocationCacheStruct struct {
 	ContributorID   string `json:"contributor_login_id"`
 }
 
-type GetLocationCacheStruct struct {
-	RawLocation string `json:"raw_location"`
-}
-
 //StorePackageMeta :
 func StorePackageMeta(pkg *common.PackageMD) error {
 	relServer, cacheReady := os.LookupEnv(common.RELEASE_LIB_SERVER)
@@ -119,25 +115,6 @@ func StoreContributors(payload *common.PackageRepoMD) error {
 		return fmt.Errorf("error storing contributor metadata to releaselib")
 	}
 	return nil
-}
-
-//GetLocationMeta :
-func GetLocationMeta(location string) (string, error) {
-	relServer, cacheReady := os.LookupEnv(common.RELEASE_LIB_SERVER)
-	if !cacheReady {
-		return "", fmt.Errorf("cache server not setup")
-	}
-	dataobject := GetLocationCacheStruct{RawLocation: location}
-	payload, _ := json.Marshal(dataobject)
-	retCode, respBody, err := common.MakeGetAPICall(relServer, locationURI, payload)
-	if err != nil && retCode != 200 {
-		return "", fmt.Errorf("un-expected result: retcode: %d err: %v", retCode, err)
-	}
-	var respobject ResolvedLocationCacheStruct
-	if err = json.Unmarshal(respBody, &respobject); err != nil {
-		return "", fmt.Errorf("error unmarshaling response err: %v", err)
-	}
-	return respobject.ResolvedCountry, nil
 }
 
 //StoreLocation :
