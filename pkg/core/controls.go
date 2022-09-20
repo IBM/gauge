@@ -21,14 +21,6 @@ type gaugeControl struct {
 		PeerReviewEnforced    bool `yaml:"peer-review-enforced"`
 		ZombieCommitEnforced  bool `yaml:"zombie-commit-enforced"`
 	} `yaml:"release-control"`
-
-	ExportControl struct {
-		Enable                bool     `yaml:"enable"`
-		RestrictedCountries   []string `yaml:"restricted-countries"`
-		TAACountries          []string `yaml:"taa-list"`
-		OFACCountries         []string `yaml:"ofac-list"`
-		ContributionThreshold int      `yaml:"contribution-threshold"`
-	} `yaml:"export-controls"`
 }
 
 func parseGaugeControls(filepath string, controlOpts *gaugeControl) error {
@@ -106,48 +98,48 @@ func parseGaugeControls(filepath string, controlOpts *gaugeControl) error {
 // 	return failReport, errorReport, checkOK
 // }
 
-func evaluateOSSExportControl(contributors []common.ContributorMD, controlOpts *gaugeControl, pkgName string) (common.ExportControlSummary, common.FailReport) {
-	failReport := common.FailReport{}
+// func evaluateOSSExportControl(contributors []common.ContributorMD, controlOpts *gaugeControl, pkgName string) (common.ExportControlSummary, common.FailReport) {
+// 	failReport := common.FailReport{}
 
-	var normalizedBase uint64
-	for _, c := range contributors {
-		normalizedBase += uint64(c.LOCAdditions)
-		normalizedBase += uint64(c.LOCDeletetions)
-	}
-	if normalizedBase == 0 {
-		fmt.Printf("\n** contributor stats not available **\n")
-	}
-	summary := common.ExportControlSummary{}
-	summary.ContributionThreshold = 50
-	summary.PackageName = pkgName
-	for _, rloc := range controlOpts.ExportControl.RestrictedCountries {
-		share := 0
-		total := 0
-		for _, cloc := range contributors {
-			if strings.Contains(strings.ToLower(cloc.ResolvedCountry), strings.ToLower(rloc)) {
-				cp := 0
-				if normalizedBase != 0 {
-					cp = int(((uint64(cloc.LOCAdditions) + uint64(cloc.LOCDeletetions)) * 100 / normalizedBase))
-				}
-				failReport.Reasons = append(failReport.Reasons, fmt.Sprintf("export_control_location check failed for contributor: `%s`,  location: `%s`, resolved country: `%s`, percent contribution: `%v`", cloc.LoginID, cloc.Location, cloc.ResolvedCountry, cp))
-				failReport.NumberOfFailures++
-				share += cp
-				total++
-			}
-		}
-		summary.Countries = append(summary.Countries, struct {
-			CountryName          string "json:\"country_name\""
-			Contributors         int    "json:\"total_num_of_contributors\""
-			PercentContributions int    "json:\"percent_contributions\""
-		}{
-			CountryName:          rloc,
-			Contributors:         total,
-			PercentContributions: share,
-		})
-	}
+// 	var normalizedBase uint64
+// 	for _, c := range contributors {
+// 		normalizedBase += uint64(c.LOCAdditions)
+// 		normalizedBase += uint64(c.LOCDeletetions)
+// 	}
+// 	if normalizedBase == 0 {
+// 		fmt.Printf("\n** contributor stats not available **\n")
+// 	}
+// 	summary := common.ExportControlSummary{}
+// 	summary.ContributionThreshold = 50
+// 	summary.PackageName = pkgName
+// 	for _, rloc := range controlOpts.ExportControl.RestrictedCountries {
+// 		share := 0
+// 		total := 0
+// 		for _, cloc := range contributors {
+// 			if strings.Contains(strings.ToLower(cloc.ResolvedCountry), strings.ToLower(rloc)) {
+// 				cp := 0
+// 				if normalizedBase != 0 {
+// 					cp = int(((uint64(cloc.LOCAdditions) + uint64(cloc.LOCDeletetions)) * 100 / normalizedBase))
+// 				}
+// 				failReport.Reasons = append(failReport.Reasons, fmt.Sprintf("export_control_location check failed for contributor: `%s`,  location: `%s`, resolved country: `%s`, percent contribution: `%v`", cloc.LoginID, cloc.Location, cloc.ResolvedCountry, cp))
+// 				failReport.NumberOfFailures++
+// 				share += cp
+// 				total++
+// 			}
+// 		}
+// 		summary.Countries = append(summary.Countries, struct {
+// 			CountryName          string "json:\"country_name\""
+// 			Contributors         int    "json:\"total_num_of_contributors\""
+// 			PercentContributions int    "json:\"percent_contributions\""
+// 		}{
+// 			CountryName:          rloc,
+// 			Contributors:         total,
+// 			PercentContributions: share,
+// 		})
+// 	}
 
-	return summary, failReport
-}
+// 	return summary, failReport
+// }
 
 func evaluatePackageRelease(releaseInsights *common.ReleaseInsights, controlOpts *gaugeControl) common.RecommendedVersion {
 	report := common.RecommendedVersion{}
