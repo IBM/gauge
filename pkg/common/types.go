@@ -300,8 +300,4 @@ type GaugeReport struct {
 		Recommendation RecommendedVersion `json:"recommendations"`
 		Insights       ReleaseInsights    `json:"insights"`
 	} `json:"release_report"`
-	ExportControlReport struct {
-		OSSMeta       PackageRepoMD        `json:"package_metadata"`
-		ExportControl ExportControlSummary `json:"export_control"`
-	} `json:"export_control_report"`
 }

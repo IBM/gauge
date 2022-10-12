@@ -35,22 +35,22 @@ func printGaugeReportForPackage(report common.GaugeReport, opts common.GaugeOpts
 		fmt.Printf(strings.Repeat("-", 80))
 		fmt.Println()
 	}
-	if opts.ExportControlEnabled {
-		fmt.Printf("Export Control Measures: ")
-		fmt.Printf("\n\tTotal Num of Contributors: %d", report.ExportControlReport.OSSMeta.TotalContributors)
-		fmt.Printf("\n\tAnonymized Contributors: %d", report.ExportControlReport.OSSMeta.AnonymizedContributors)
-		fmt.Printf("\n\tContributors failed to query: %d", report.ExportControlReport.OSSMeta.ErroredContributors)
-		fmt.Println()
-		for _, f := range report.ExportControlReport.ExportControl.Countries {
-			fmt.Printf(strings.Repeat("-", 80))
-			fmt.Printf("\n\tRestricted Country: %s", f.CountryName)
-			fmt.Printf("\n\t\t Number of contributors: %d", f.Contributors)
-			fmt.Printf("\n\t\t Percentage of contributors: %d", f.PercentContributions)
-			fmt.Println()
-			// fmt.Printf(strings.Repeat("-", 80))
-		}
-		fmt.Println()
-		fmt.Printf(strings.Repeat("*", 80))
-		fmt.Println()
-	}
+	// if opts.ExportControlEnabled {
+	// 	fmt.Printf("Export Control Measures: ")
+	// 	fmt.Printf("\n\tTotal Num of Contributors: %d", report.ExportControlReport.OSSMeta.TotalContributors)
+	// 	fmt.Printf("\n\tAnonymized Contributors: %d", report.ExportControlReport.OSSMeta.AnonymizedContributors)
+	// 	fmt.Printf("\n\tContributors failed to query: %d", report.ExportControlReport.OSSMeta.ErroredContributors)
+	// 	fmt.Println()
+	// 	for _, f := range report.ExportControlReport.ExportControl.Countries {
+	// 		fmt.Printf(strings.Repeat("-", 80))
+	// 		fmt.Printf("\n\tRestricted Country: %s", f.CountryName)
+	// 		fmt.Printf("\n\t\t Number of contributors: %d", f.Contributors)
+	// 		fmt.Printf("\n\t\t Percentage of contributors: %d", f.PercentContributions)
+	// 		fmt.Println()
+	// 		// fmt.Printf(strings.Repeat("-", 80))
+	// 	}
+	// 	fmt.Println()
+	// 	fmt.Printf(strings.Repeat("*", 80))
+	// 	fmt.Println()
+	// }
 }

@@ -40,10 +40,10 @@ func runGaugeForPackage(ctx context.Context, opts common.GaugeOpts, gaugeCtr *ga
 	if gaugeCtr.ReleaseConfig.Enable {
 		gaugePackageRelease(ctx, opts, gaugeCtr, ghclient, &report)
 	}
-	if gaugeCtr.ExportControl.Enable {
-		packageGauger(ctx, opts, gaugeCtr, ghclient, &report)
-	}
-	opts.ExportControlEnabled = gaugeCtr.ExportControl.Enable
+	// if gaugeCtr.ExportControl.Enable {
+	// 	packageGauger(ctx, opts, gaugeCtr, ghclient, &report)
+	// }
+	// opts.ExportControlEnabled = gaugeCtr.ExportControl.Enable
 	opts.PackageReleaseEnabled = gaugeCtr.ReleaseConfig.Enable
 
 	printGaugeReportForPackage(report, opts)
@@ -56,6 +56,7 @@ func runGaugeForPackage(ctx context.Context, opts common.GaugeOpts, gaugeCtr *ga
 func runGaugeForSBOM(ctx context.Context, opts common.GaugeOpts, gaugeCtr *gaugeControl, ghclient *ghapis.GHClient) error {
 	report := []common.GaugeReport{}
 	pkgList := []common.PackageProps{}
+	logreport := []common.LogReport{}
 	if strings.Compare(strings.ToLower(common.CYCLONEDX_VAR), opts.SBOMFormat) == 0 {
 		pkgList, _ = sbom.ParseOSSPackagesCyclonedx(opts.SBOMFilepath)
 	} else if strings.Compare(strings.ToLower(common.CSV_VAR), opts.SBOMFormat) == 0 {
@@ -79,19 +80,21 @@ func runGaugeForSBOM(ctx context.Context, opts common.GaugeOpts, gaugeCtr *gauge
 		if totalPkgs%5 == 0 {
 			progress.SetCurrent(int64(totalPkgs))
 		}
+		pkglogger := common.LogReport{}
 		currGaugeReport := common.GaugeReport{}
 		opts.RepoURL = resolvePackageSource(pkg.Name, pkg.Ecosystem, "")
 		opts.PkgName = pkg.Name
 		opts.Ecosystem = pkg.Ecosystem
 		opts.ReleaseID = pkg.Key
+		logreport = append(logreport, pkglogger)
 
 		var err error
 		if gaugeCtr.ReleaseConfig.Enable {
 			err = gaugePackageRelease(ctx, opts, gaugeCtr, ghclient, &currGaugeReport)
 		}
-		if gaugeCtr.ExportControl.Enable {
-			err = packageGauger(ctx, opts, gaugeCtr, ghclient, &currGaugeReport)
-		}
+		// if gaugeCtr.ExportControl.Enable {
+		// 	err = packageGauger(ctx, opts, gaugeCtr, ghclient, &currGaugeReport)
+		// }
 		if err != nil {
 			resolveFailedPkgs++
 			if errors.Is(err, &common.GithubRateLimitErr{}) {
@@ -106,8 +109,9 @@ func runGaugeForSBOM(ctx context.Context, opts common.GaugeOpts, gaugeCtr *gauge
 	}
 
 	progress.Finish()
-	// printSBOMReport(opts.SBOMFilepath, guageCtr.ExportControl.RestrictedCountries, &summary)
-	// fmt.Printf("complete log file is available at: %s\n", logFile)
+	// printSBOMReport(opts.SBOMFilepath, &summary)
+	logFile, _ := storeLogReport(logreport, "")
+	fmt.Printf("complete log file is available at: %s\n", logFile)
 
 	if opts.ResultFilepath != "" {
 		storeLogReport(report, opts.ResultFilepath)
@@ -162,8 +166,7 @@ func sbomGauger(ctx context.Context, opts common.GaugeOpts, guageCtr *gaugeContr
 				ghRateLimitHit = true
 			}
 		} else {
-			pkglogger.LocationErr = resolveLocation(ossMeta.Contributors)
-			pkgSummary, pkglogger.ControlErr = evaluateOSSExportControl(ossMeta.Contributors, guageCtr, pkg.Name)
+			// pkgSummary, pkglogger.ControlErr = evaluateOSSExportControl(ossMeta.Contributors, guageCtr, pkg.Name)
 			pkglogger.RepoURL = ossMeta.RepoURL
 			pkglogger.LastUpdated = ossMeta.LastUpdated
 			pkgsReport = append(pkgsReport, pkgSummary)
@@ -175,7 +178,7 @@ func sbomGauger(ctx context.Context, opts common.GaugeOpts, guageCtr *gaugeContr
 	summary.TotalPackages = nPkgs
 	summarizeSBOMResults(pkgsReport, &summary)
 	progress.Finish()
-	printSBOMReport(opts.SBOMFilepath, guageCtr.ExportControl.RestrictedCountries, &summary)
+	printSBOMReport(opts.SBOMFilepath, &summary)
 	fmt.Printf("complete log file is available at: %s\n", logFile)
 	return summary, nil
 }
@@ -199,38 +202,26 @@ func summarizeSBOMResults(pkgRes []common.ExportControlSummary, sbomRes *common.
 
 func packageGauger(ctx context.Context, opts common.GaugeOpts, guageCtr *gaugeControl, ghcli *ghapis.GHClient, report *common.GaugeReport) error {
 	logreport := common.LogReport{}
-	summary := common.ExportControlSummary{}
+	// summary := common.ExportControlSummary{}
 
 	ossMeta, err := getPkgOSSMeta(ctx, ghcli, opts.PkgName, opts.Ecosystem, opts.RepoURL)
 	if err != nil {
 		return err
 	}
 
-	logreport.LocationErr = resolveLocation(ossMeta.Contributors)
-	summary, logreport.ControlErr = evaluateOSSExportControl(ossMeta.Contributors, guageCtr, ossMeta.PackageName)
-
 	logreport.LastUpdated = ossMeta.LastUpdated
 	logreport.PackageName = ossMeta.PackageName
 	logreport.RepoURL = ossMeta.RepoURL
 
-	// logFile, err := storeLogReport(logreport, "")
-	// // printPackageReport(summary, ossMeta)
-	// fmt.Printf("complete log file is available at: %s\n", logFile)
-
-	report.ExportControlReport.OSSMeta = ossMeta
-	report.ExportControlReport.ExportControl = summary
-	report.ExportControlReport.ExportControl.AuditLogs = logreport
-
 	return nil
 }
 
-func printSBOMReport(sbomfp string, exportCntrPolicy []string, report *common.ExportControlSummarySBOM) {
+func printSBOMReport(sbomfp string, report *common.ExportControlSummarySBOM) {
 	fmt.Printf(strings.Repeat("*", 80))
 	fmt.Printf("\nGauge Report for SBOM %s:\n", sbomfp)
 	fmt.Printf(strings.Repeat("*", 80))
 	fmt.Printf("\nTotal Num of packages in SBOM: %d", report.TotalPackages)
 	fmt.Printf("\nPackages analyzed successfully: %d", report.AnalyzedPackages)
-	fmt.Printf("\nExport control policy for restricted countries: %v", "'"+strings.Join(exportCntrPolicy, `','`)+`'`)
 	fmt.Printf("\nNumber of packages failed: %d", len(report.CheckFails[0].ListOfPackages))
 	fmt.Printf("\nList of packages failed: %v", "'"+strings.Join(report.CheckFails[0].ListOfPackages, `','`)+`'`)
 	fmt.Println()
@@ -246,14 +237,14 @@ func printPackageReport(report common.ExportControlSummary, ossMeta common.Packa
 	fmt.Printf("\nAnonymized Contributors: %d", ossMeta.AnonymizedContributors)
 	fmt.Printf("\nContributors failed to query: %d", ossMeta.ErroredContributors)
 	fmt.Println()
-	for _, f := range report.Countries {
-		fmt.Printf(strings.Repeat("-", 80))
-		fmt.Printf("\nRestricted Country: %s", f.CountryName)
-		fmt.Printf("\n\t Number of contributors: %d", f.Contributors)
-		fmt.Printf("\n\t Percentage of contributors: %d", f.PercentContributions)
-		fmt.Println()
-		// fmt.Printf(strings.Repeat("-", 80))
-	}
+	// for _, f := range report.Countries {
+	// 	fmt.Printf(strings.Repeat("-", 80))
+	// 	fmt.Printf("\nRestricted Country: %s", f.CountryName)
+	// 	fmt.Printf("\n\t Number of contributors: %d", f.Contributors)
+	// 	fmt.Printf("\n\t Percentage of contributors: %d", f.PercentContributions)
+	// 	fmt.Println()
+	// 	// fmt.Printf(strings.Repeat("-", 80))
+	// }
 	fmt.Println()
 	fmt.Printf(strings.Repeat("*", 80))
 	fmt.Println()

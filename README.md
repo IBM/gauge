@@ -64,23 +64,6 @@ release-control:
   # branch directly without formal pull request
   # Control to block such code changes
   zombie-commit-enforced: true
-
-## export control check verifies developers/contributors location against
-## known export control restricted coutries
-export-controls:
-  # flag to enable/disable export control check 
-  enable: true
-
-  # list of countries to check against
-  restricted-countries: [country-name-1]
-
-  # countribution threshold
-  contribution-threshold: 10
-
-  # regulated compliance control country list
-  taa-list: []
-
-  ofac-list: []
 ```
 
 ## Sample Run
