@@ -1,3 +1,9 @@
+# Note: This project is archived
+
+This project is no longer actively maintained, so use at your own risk.
+
+For other open source security scoring projects, we suggest using scorecard at https://github.com/ossf/scorecard/  
+
 ## Gauge
 
 Measure release insights and get recommendations for open-source dependencies.
